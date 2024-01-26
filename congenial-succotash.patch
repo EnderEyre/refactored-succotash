@@ -1,0 +1,56 @@
+diff --git a/examples/triangle/triangle.cpp b/examples/triangle/triangle.cpp
+index 59f6f0a7..4b828dbc 100644
+--- a/examples/triangle/triangle.cpp
++++ b/examples/triangle/triangle.cpp
+@@ -109,7 +109,7 @@ public:
+ 	VkCommandPool commandPool{ VK_NULL_HANDLE };
+ 	std::array<VkCommandBuffer, MAX_CONCURRENT_FRAMES> commandBuffers{};
+ 	std::array<VkFence, MAX_CONCURRENT_FRAMES> waitFences{};
+-
++	VkPhysicalDeviceFragmentShadingRateFeaturesKHR FragmentShadingRate{};
+ 	// To select the correct sync objects, we need to keep track of the current frame
+ 	uint32_t currentFrame{ 0 };
+ 
+@@ -124,6 +124,25 @@ public:
+ 		camera.setRotation(glm::vec3(0.0f));
+ 		camera.setPerspective(60.0f, (float)width / (float)height, 1.0f, 256.0f);
+ 		// Values not set here are initialized in the base class constructor
++		enableExtensions();
++		FragmentShadingRate.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
++		FragmentShadingRate.pipelineFragmentShadingRate = VK_TRUE;
++		deviceCreatepNextChain = &FragmentShadingRate;
++
++	}
++
++	void VulkanExample::enableExtensions()
++	{
++		// Require Vulkan 1.1
++		apiVersion = VK_API_VERSION_1_3;
++
++		// Ray tracing related extensions required by this sample
++		enabledInstanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
++		enabledDeviceExtensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
++		enabledDeviceExtensions.push_back(VK_KHR_MULTIVIEW_EXTENSION_NAME);
++		enabledDeviceExtensions.push_back(VK_KHR_MAINTENANCE2_EXTENSION_NAME);
++		enabledDeviceExtensions.push_back(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
++		enabledDeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+ 	}
+ 
+ 	~VulkanExample()
+@@ -838,6 +857,16 @@ public:
+ 		pipelineCI.pDepthStencilState = &depthStencilStateCI;
+ 		pipelineCI.pDynamicState = &dynamicStateCI;
+ 
++		VkExtent2D                                   fragmentSize = { 4, 4 };
++		VkPipelineFragmentShadingRateStateCreateInfoKHR fsr;
++		fsr.fragmentSize = fragmentSize;
++		fsr.combinerOps[0] = VkFragmentShadingRateCombinerOpKHR::VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR;
++		fsr.combinerOps[1] = VkFragmentShadingRateCombinerOpKHR::VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR;
++		fsr.sType = VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR;
++		fsr.pNext = nullptr;
++
++
++		pipelineCI.pNext = &fsr;
+ 		// Create rendering pipeline using the specified states
+ 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
+ 
